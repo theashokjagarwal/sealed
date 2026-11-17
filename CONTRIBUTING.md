@@ -1,66 +1,50 @@
 # Contributing to SEALED
 
-Thank you for contributing to **SEALED**. Every contribution must preserve three non-negotiable guarantees:
+Every contribution must preserve three core guarantees:
 
 1. **Zero Telemetry / Air-Gap**: Never add analytics, crash reporting, remote update checks, or outbound network calls to author-owned servers.
-2. **Determinism**: Identical inputs must produce byte-identical `evidence.zip` archives.
-3. **Security First**: Every security control must be backed by an automated regression test that fails when the control is removed.
+2. **Byte-Determinism**: Identical inputs must produce byte-identical `evidence.zip` archives.
+3. **Zero External Dependencies**: Core modules rely strictly on standard libraries (Python 3 stdlib, C++17 stdlib, Java 17 stdlib, Vanilla JS/HTML/CSS).
 
 ---
 
 ## Development Setup
 
-### Option A: Zero-Dependency CLI & Test Suite (macOS / Linux)
-Requires only standard Ruby (pre-installed on macOS):
-
 ```bash
 git clone https://github.com/theashokjagarwal/sealed.git
 cd sealed
 
-# Run all 9 security, determinism, and exit-code tests
-./tests/run_all_tests.sh
-```
+# 1. Run all 9 security, air-gap & determinism tests (Python 3)
+python3 tests/run_all_tests.py
 
-### Option B: Rust Core & CLI
-Requires Rust 1.75+ (`cargo`):
+# 2. Build & test the C++17 streaming PII/Luhn scanner
+g++ -std=c++17 -O2 -Wall -Wextra -o native_cpp/sealed_fast_scanner native_cpp/sealed_fast_scanner.cpp
+./native_cpp/sealed_fast_scanner ./fixture-project
 
-```bash
-cargo test --workspace
-cargo build --release --bin sealed
+# 3. Compile & test the Java standalone evidence verifier
+javac java_cli/SealedVerifier.java
+java -cp java_cli SealedVerifier ./evidence.zip
+
+# 4. Launch the Instrument Panel Workbench UI locally
+python3 sealed.py serve --port 8787
 ```
 
 ---
 
-## Adding New Compliance Rules
+## Adding Compliance Rules
 
-1. Add your rule definition to [`rules/generate_rule_pack.rb`](rules/generate_rule_pack.rb) with exact regulatory clause citations (e.g., EU AI Act Article, ISO/IEC 42001 Control, NIST AI RMF Function, GDPR/DPDP Section).
-2. Re-sign the rule pack:
+1. Add your rule definition to [`rules/generate_rule_pack.py`](rules/generate_rule_pack.py) with exact regulatory citations.
+2. Re-sign the rule pack with Ed25519:
    ```bash
-   ruby rules/generate_rule_pack.rb
+   python3 rules/generate_rule_pack.py
    ```
-3. Add a fixture case under `fixture-project/` and verify `./bin/sealed scan ./fixture-project` flags the new violation and `./tests/run_all_tests.sh` passes.
+3. Verify `./tests/run_all_tests.py` passes cleanly.
 
 ---
 
 ## UI Contributions
 
-Read [`DECISIONS.md`](DECISIONS.md) before modifying anything under `ui/`. All UI changes must obey the frozen **Instrument Panel** rules:
-- Use semantic CSS tokens only (no hardcoded colors).
-- Strictly follow the 4px spacing scale (`4/8/12/16/24/32/48`).
-- Maintain full keyboard navigation (`j`/`k`, `Enter`, `Esc`) and `prefers-reduced-motion` support.
-- Zero external CDN dependencies or inline un-escaped model output.
-
----
-
-## Pull Request Checklist
-
-- [ ] `./tests/run_all_tests.sh` passes with exit code `0`.
-- [ ] Byte-determinism verified (`test_determinism.rb` passes).
-- [ ] Zero new telemetry or outbound network endpoints (`test_network_blocked.rb` passes).
-- [ ] Documentation updated (`README.md`, `THREAT_MODEL.md`, or `LIMITATIONS.md` as appropriate).
-
----
-
-## Reporting Security Vulnerabilities
-
-Do **not** open a public GitHub issue for security flaws. Follow the private disclosure instructions in [`SECURITY.md`](SECURITY.md).
+Read [`DECISIONS.md`](DECISIONS.md) before modifying `ui/`. All UI changes must obey the frozen **Instrument Panel** system:
+- Semantic CSS tokens only (zero hardcoded colors, zero gradients).
+- 4px strict spacing scale and max 8px border radius.
+- Full keyboard navigation (`⌘K`, `1`–`8`, `j`/`k`, `t`, `Esc`) and `prefers-reduced-motion` support.

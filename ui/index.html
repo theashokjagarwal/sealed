@@ -3,439 +3,611 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
-  <title>SEALED — AI Compliance &amp; Safety Auditor</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src 'self' blob:; connect-src 'self';">
+  <title>SEALED — AI Compliance &amp; Safety Workbench</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Persistent Top Rail / Header -->
-  <header class="top-rail">
-    <div class="rail-left">
-      <div class="brand">
-        <span class="brand-name">SEALED</span>
-        <span class="brand-ver">v1.0.0</span>
+  <!-- ============================================================ -->
+  <!-- TOP COMMAND & BREADCRUMB BAR (44px) -->
+  <!-- ============================================================ -->
+  <header class="top-bar">
+    <div class="top-left">
+      <div class="brand-lockup">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-title">SEALED</span>
+        <span class="brand-ver mono">v2.0</span>
       </div>
-      <div class="context-pill">
-        <span class="pill-label">TARGET:</span>
-        <span class="pill-val mono" id="active-target-label">fixture-project</span>
+      <span class="sep">/</span>
+      <div class="project-switcher">
+        <select id="quick-project-select" aria-label="Switch active project">
+          <option value="fixture-project">fixture-project</option>
+          <option value="clean-project">clean-project</option>
+          <option value="non-ai-project">non-ai-project</option>
+        </select>
       </div>
-      <div class="context-pill">
-        <span class="pill-label">PACK:</span>
-        <span class="pill-val mono" id="active-pack-label">eu-ai-act-iso42001-nist (v1.0)</span>
-      </div>
+      <span class="pack-pill mono" title="Ed25519 Verified Rule Pack">
+        <span class="dot-pass"></span>eu-ai-act-iso42001-nist v1.0
+      </span>
     </div>
 
-    <!-- Navigation Tabs -->
-    <nav class="nav-tabs" role="tablist">
-      <button class="nav-tab active" data-view="launch" role="tab" aria-selected="true">Launch</button>
-      <button class="nav-tab" data-view="theatre" role="tab" aria-selected="false">Scan Theatre</button>
-      <button class="nav-tab" data-view="results" role="tab" aria-selected="false">Results <span class="tab-badge" id="results-count-badge">13</span></button>
-      <button class="nav-tab" data-view="evidence" role="tab" aria-selected="false">Evidence Chain</button>
-      <button class="nav-tab" data-view="rulepacks" data-tab-name="Rule Packs" role="tab" aria-selected="false">Rule Packs</button>
-      <button class="nav-tab" data-view="cigate" role="tab" aria-selected="false">CI Gate</button>
-      <button class="nav-tab" data-view="report" role="tab" aria-selected="false">Report</button>
-      <button class="nav-tab" data-view="settings" role="tab" aria-selected="false">Settings</button>
-    </nav>
-
-    <div class="rail-right">
-      <button class="status-badge badge-airgap" id="btn-airgap-info" title="Click to view airgap security proof">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span>AIR-GAPPED (OFFLINE)</span>
+    <div class="top-center">
+      <button class="cmd-trigger" id="btn-open-cmd" title="Open Command Palette (Cmd/Ctrl+K)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <span>Jump to view, run scan, verify chain...</span>
+        <kbd>⌘K</kbd>
       </button>
-      <button class="icon-btn" id="theme-toggle" title="Toggle Light / Dark Theme" aria-label="Toggle theme">
-        <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </div>
+
+    <div class="top-right">
+      <button class="airgap-pill mono" id="btn-airgap-info" title="Air-gapped egress proof">
+        <span class="dot-pass"></span>
+        <span>0 B TX · AIR-GAPPED</span>
+      </button>
+      <button class="btn btn-primary btn-xs" id="btn-top-run-scan">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Run Audit
       </button>
     </div>
   </header>
 
-  <!-- Main Viewport Router -->
-  <main class="viewport-container" id="main-viewport">
+  <!-- ============================================================ -->
+  <!-- 5-STAGE INTERACTIVE WORKFLOW PIPELINE BAR (36px) -->
+  <!-- ============================================================ -->
+  <div class="pipeline-bar" role="region" aria-label="Audit workflow pipeline">
+    <button class="pipe-step done" data-jump="launch" id="pipe-1">
+      <span class="pipe-num mono">01</span>
+      <span class="pipe-label">Target Project</span>
+      <span class="pipe-state mono" id="pipe-state-1">READY</span>
+    </button>
+    <span class="pipe-arrow" aria-hidden="true">→</span>
+    <button class="pipe-step done" data-jump="theatre" id="pipe-2">
+      <span class="pipe-num mono">02</span>
+      <span class="pipe-label">Surface Discovery</span>
+      <span class="pipe-state mono" id="pipe-state-2">5 FILES</span>
+    </button>
+    <span class="pipe-arrow" aria-hidden="true">→</span>
+    <button class="pipe-step done" data-jump="theatre" id="pipe-3">
+      <span class="pipe-num mono">03</span>
+      <span class="pipe-label">PII &amp; Attack Battery</span>
+      <span class="pipe-state mono" id="pipe-state-3">13 HITS</span>
+    </button>
+    <span class="pipe-arrow" aria-hidden="true">→</span>
+    <button class="pipe-step done" data-jump="results" id="pipe-4">
+      <span class="pipe-num mono">04</span>
+      <span class="pipe-label">Ed25519 Rule Map</span>
+      <span class="pipe-state mono" id="pipe-state-4">FAIL</span>
+    </button>
+    <span class="pipe-arrow" aria-hidden="true">→</span>
+    <button class="pipe-step done" data-jump="evidence" id="pipe-5">
+      <span class="pipe-num mono">05</span>
+      <span class="pipe-label">SHA-256 Evidence</span>
+      <span class="pipe-state mono" id="pipe-state-5">SEALED</span>
+    </button>
+  </div>
 
-    <!-- ============================================================ -->
-    <!-- VIEW A: LAUNCH / HOME -->
-    <!-- ============================================================ -->
-    <section class="view-panel active" id="view-launch">
-      <div class="launch-hero">
-        <div class="drop-target" id="folder-drop-zone">
-          <div class="drop-icon">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          </div>
-          <h2 class="drop-title">Drop an AI project folder here</h2>
-          <p class="drop-desc">Scans code, system prompts, datasets, and tools offline against regulatory checklists.</p>
-          <div class="drop-cta-row">
-            <button class="btn btn-primary" id="btn-browse-folder">Browse Local Folder</button>
-            <button class="btn btn-secondary" id="btn-load-fixture">Audit Planted Fixture (13 Flaws)</button>
-            <button class="btn btn-secondary" id="btn-load-clean">Audit Clean AI Project (0 Flaws)</button>
-            <button class="btn btn-secondary" id="btn-load-non-ai">Audit Non-AI Project (0 AI Surfaces)</button>
-          </div>
-          <div class="keyboard-hints">
-            <span class="hint-item"><kbd>Cmd</kbd> + <kbd>O</kbd> Open Folder</span>
-            <span class="hint-item"><kbd>Cmd</kbd> + <kbd>K</kbd> Command Palette</span>
-            <span class="hint-item"><kbd>j</kbd>/<kbd>k</kbd> Navigate Findings</span>
-          </div>
-        </div>
-
-        <!-- Recent Audits Panel -->
-        <div class="recent-projects-panel">
-          <div class="section-header">
-            <h3>Recent Project Audits</h3>
-            <span class="text-muted">Local disk cache</span>
-          </div>
-          <div class="recent-list">
-            <div class="recent-item" data-project="fixture-project">
-              <div class="recent-info">
-                <span class="recent-name mono">./fixture-project</span>
-                <span class="recent-meta">TitanGate Support Agent &bull; 13 findings &bull; 2 mins ago</span>
-              </div>
-              <div class="recent-action">
-                <span class="badge badge-fail">NON-COMPLIANT</span>
-                <button class="btn btn-sm btn-secondary btn-re-audit">Run Audit</button>
-              </div>
-            </div>
-            <div class="recent-item" data-project="clean-project">
-              <div class="recent-info">
-                <span class="recent-name mono">./clean-project</span>
-                <span class="recent-meta">Hardened Agent &bull; 0 findings &bull; 10 mins ago</span>
-              </div>
-              <div class="recent-action">
-                <span class="badge badge-pass">PASSED</span>
-                <button class="btn btn-sm btn-secondary btn-re-audit">Run Audit</button>
-              </div>
-            </div>
-            <div class="recent-item" data-project="non-ai-project">
-              <div class="recent-info">
-                <span class="recent-name mono">./non-ai-project</span>
-                <span class="recent-meta">Order Billing Microservice &bull; 0 AI Surfaces &bull; 0 findings</span>
-              </div>
-              <div class="recent-action">
-                <span class="badge badge-pass">PASSED</span>
-                <button class="btn btn-sm btn-secondary btn-re-audit">Run Audit</button>
-              </div>
-            </div>
-          </div>
-        </div>
+  <!-- ============================================================ -->
+  <!-- MAIN WORKBENCH SHELL (LEFT RAIL + VIEWPORT) -->
+  <!-- ============================================================ -->
+  <div class="workbench-shell">
+    <!-- Left Activity Rail (52px) -->
+    <aside class="activity-rail" role="tablist" aria-label="Primary navigation">
+      <div class="rail-group">
+        <button class="rail-btn active" data-view="launch" role="tab" aria-selected="true" data-tooltip="1 · Launch Workspace">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="rail-btn" data-view="theatre" role="tab" aria-selected="false" data-tooltip="2 · Live Scan Theatre">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </button>
+        <button class="rail-btn" data-view="results" role="tab" aria-selected="false" data-tooltip="3 · Findings & Diff Inspector">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="rail-pip mono" id="rail-findings-pip">13</span>
+        </button>
+        <button class="rail-btn" data-view="evidence" role="tab" aria-selected="false" data-tooltip="4 · SHA-256 Hash Chain">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </button>
+        <button class="rail-btn" data-view="rulepacks" role="tab" aria-selected="false" data-tooltip="5 · Signed Rule Packs">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </button>
+        <button class="rail-btn" data-view="cigate" role="tab" aria-selected="false" data-tooltip="6 · CI/CD Pipeline Gate">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+        </button>
+        <button class="rail-btn" data-view="report" role="tab" aria-selected="false" data-tooltip="7 · Printable A4 Report">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </button>
       </div>
-    </section>
 
-    <!-- ============================================================ -->
-    <!-- VIEW B: SCAN THEATRE (LIVE TELEMETRY STREAM) -->
-    <!-- ============================================================ -->
-    <section class="view-panel" id="view-theatre">
-      <div class="theatre-layout">
-        <div class="theatre-toolbar">
-          <div class="theatre-status-block">
-            <span class="pulse-indicator" id="scan-pulse"></span>
-            <span class="theatre-status-text" id="scan-status-text">SCAN IN PROGRESS</span>
-            <span class="mono text-muted" id="scan-timer">00:01.42</span>
-          </div>
-          <div class="theatre-metrics">
-            <div class="metric"><span class="m-label">Surfaces:</span> <span class="m-val mono" id="m-surfaces">6</span></div>
-            <div class="metric"><span class="m-label">Probes:</span> <span class="m-val mono" id="m-probes">13</span></div>
-            <div class="metric"><span class="m-label">Violations:</span> <span class="m-val mono text-fail" id="m-violations">13</span></div>
-          </div>
-          <div class="theatre-actions">
-            <button class="btn btn-danger btn-sm" id="btn-cancel-scan">Cancel Scan</button>
-          </div>
-        </div>
-
-        <div class="theatre-stream" id="scan-stream-container">
-          <!-- Real-time probe logs dynamically injected here -->
-        </div>
+      <div class="rail-group">
+        <button class="rail-btn" data-view="settings" role="tab" aria-selected="false" data-tooltip="8 · Settings & Keychain">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="rail-btn" id="theme-toggle" data-tooltip="Toggle Dark / Light Theme (t)" aria-label="Toggle color theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
       </div>
-    </section>
+    </aside>
 
-    <!-- ============================================================ -->
-    <!-- VIEW C: RESULTS (PRIMARY TRI-SPLIT VIEWPORT) -->
-    <!-- ============================================================ -->
-    <section class="view-panel" id="view-results">
-      <div class="results-tri-split">
-        <!-- Pane 1: Findings List & Filter Rail -->
-        <aside class="tri-pane pane-list">
-          <div class="list-filter-bar">
-            <input type="text" class="input-filter" id="filter-search" placeholder="Filter findings (j/k to navigate)...">
-            <div class="filter-chips">
-              <button class="chip active" data-filter="all">All (13)</button>
-              <button class="chip chip-fail" data-filter="CRITICAL">Critical (4)</button>
-              <button class="chip chip-fail" data-filter="HIGH">High (9)</button>
-              <button class="chip" data-filter="EU AI Act">EU AI Act</button>
-              <button class="chip" data-filter="ISO/IEC 42001">ISO 42001</button>
+    <!-- Main Viewport -->
+    <main class="viewport-main">
+
+      <!-- ======================================================== -->
+      <!-- VIEW 1: LAUNCH WORKBENCH -->
+      <!-- ======================================================== -->
+      <section class="view-panel active" id="view-launch">
+        <div class="launch-grid">
+          <div class="launch-primary">
+            <div class="drop-zone" id="folder-drop-zone" tabindex="0">
+              <div class="drop-header-row">
+                <span class="mono text-xs text-muted">LOCAL-FIRST SCANNER · ZERO UPLOADS</span>
+                <span class="badge badge-pass">FILE SYSTEM API READY</span>
+              </div>
+              <div class="drop-center">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="drop-svg"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 11 15 14"/></svg>
+                <h1>Drop an AI project folder here</h1>
+                <p>Inspects prompts, JSONL/CSV datasets, RAG documents, agent tool code, and secret configs completely offline against EU AI Act, ISO 42001, NIST AI RMF, and GDPR/DPDP.</p>
+                <div class="drop-actions">
+                  <button class="btn btn-primary" id="btn-pick-real-folder">Open Real Local Folder…</button>
+                  <input type="file" id="fallback-dir-input" webkitdirectory directory multiple hidden>
+                  <button class="btn btn-secondary" id="btn-launch-fixture">Run Fixture Audit (13 Flaws)</button>
+                </div>
+              </div>
+              <div class="drop-footer-keys">
+                <span><kbd>⌘K</kbd> Command Palette</span>
+                <span><kbd>⌘O</kbd> Open Folder</span>
+                <span><kbd>1</kbd>–<kbd>8</kbd> Switch Views</span>
+                <span><kbd>j</kbd>/<kbd>k</kbd> Traverse Findings</span>
+              </div>
             </div>
-            <div class="bulk-action-bar">
-              <label class="checkbox-label"><input type="checkbox" id="bulk-select-all"> <span>Select all</span></label>
-              <button class="btn btn-sm btn-secondary" id="btn-accept-risk" disabled>Mark Accepted Risk</button>
-            </div>
-          </div>
-          <div class="findings-scroll-list" id="findings-list-root">
-            <!-- Dynamic findings items -->
-          </div>
-        </aside>
 
-        <!-- Pane 2: Forensic Detail Inspector -->
-        <main class="tri-pane pane-detail" id="pane-detail-root">
-          <!-- Selected finding details -->
-        </main>
-
-        <!-- Pane 3: Rule Map & Legal Controls -->
-        <aside class="tri-pane pane-rule" id="pane-rule-root">
-          <!-- Regulatory clause and legal mapping -->
-        </aside>
-      </div>
-    </section>
-
-    <!-- ============================================================ -->
-    <!-- VIEW D: EVIDENCE PACK (CRYPTOGRAPHIC TIMELINE) -->
-    <!-- ============================================================ -->
-    <section class="view-panel" id="view-evidence">
-      <div class="evidence-layout">
-        <div class="evidence-header">
-          <div>
-            <h2>Cryptographic Hash-Chain Evidence Pack</h2>
-            <p class="text-secondary">Every finding is deterministically chained using SHA-256 to ensure complete tamper-evidence.</p>
-          </div>
-          <div class="evidence-actions">
-            <button class="btn btn-primary" id="btn-export-evidence-zip">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              Export evidence.zip
-            </button>
-            <button class="btn btn-secondary" id="btn-reverify-all-chains">Verify Entire Chain</button>
-          </div>
-        </div>
-
-        <div class="statement-card">
-          <h4>Limitation of Proof &amp; Evidentiary Disclaimer</h4>
-          <p>This export bundles raw audit telemetry, canonical finding payloads, and an unforgeable hash chain. <strong>What this ZIP proves:</strong> that the listed findings were produced deterministically from the specified project tree using signed rule pack <code>eu-ai-act-iso42001-nist-v1</code> at audit time. <strong>What it does NOT prove:</strong> that the model or system is immune to un-evaluated attack vectors or runtime modifications post-audit.</p>
-        </div>
-
-        <div class="timeline-container" id="evidence-timeline-root">
-          <!-- Chained blocks dynamically rendered -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================ -->
-    <!-- VIEW E: RULE PACKS (ED25519 VERIFICATION) -->
-    <!-- ============================================================ -->
-    <section class="view-panel" id="view-rulepacks">
-      <div class="rulepacks-layout">
-        <div class="section-header-row">
-          <div>
-            <h2>Installed Compliance Rule Packs</h2>
-            <p class="text-secondary">Official rules require cryptographic Ed25519 signature validation before activation.</p>
-          </div>
-          <button class="btn btn-secondary" id="btn-load-rulepack-file">Load Rule Pack from File / USB</button>
-        </div>
-
-        <div class="rulepack-card">
-          <div class="pack-top">
-            <div class="pack-meta">
-              <span class="pack-badge badge-pass">ED25519 VERIFIED (VALID)</span>
-              <h3>eu-ai-act-iso42001-nist-v1</h3>
-              <p class="mono text-muted">Issuer: SEALED Official Core Governance &bull; v1.0.0 &bull; 8 Rules</p>
-            </div>
-            <div class="pack-actions">
-              <button class="btn btn-sm btn-secondary" id="btn-test-tamper-pack">Simulate Tampered Pack</button>
+            <div class="presets-section">
+              <div class="sub-header">
+                <h3>Included Benchmark Targets</h3>
+                <span class="mono text-xs text-muted">Click any target to execute live 5-stage audit</span>
+              </div>
+              <div class="target-table">
+                <div class="target-row" data-preset="fixture-project">
+                  <div class="target-col-main">
+                    <div class="target-name mono">./fixture-project</div>
+                    <div class="target-desc">Planted flaws: leaked API keys, valid Luhn Visa + SSN in JSONL, RAG indirect prompt injection, raw <code>eval()</code> &amp; <code>os.system()</code>.</div>
+                  </div>
+                  <div class="target-col-meta">
+                    <span class="badge badge-fail">13 FLAWS · EXIT 1</span>
+                    <button class="btn btn-secondary btn-sm btn-run-preset">Audit →</button>
+                  </div>
+                </div>
+                <div class="target-row" data-preset="clean-project">
+                  <div class="target-col-main">
+                    <div class="target-name mono">./clean-project</div>
+                    <div class="target-desc">Hardened AI assistant: explicit instruction boundaries, anonymized synthetic records, read-only tools, env-var credential references.</div>
+                  </div>
+                  <div class="target-col-meta">
+                    <span class="badge badge-pass">0 FLAWS · EXIT 0</span>
+                    <button class="btn btn-secondary btn-sm btn-run-preset">Audit →</button>
+                  </div>
+                </div>
+                <div class="target-row" data-preset="non-ai-project">
+                  <div class="target-col-main">
+                    <div class="target-name mono">./non-ai-project</div>
+                    <div class="target-desc">Traditional Python order-fulfillment &amp; billing microservice with zero AI prompts, models, or LLM dependencies.</div>
+                  </div>
+                  <div class="target-col-meta">
+                    <span class="badge badge-pass">0 AI SURFACES · EXIT 0</span>
+                    <button class="btn btn-secondary btn-sm btn-run-preset">Audit →</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="pack-key-block">
-            <div class="key-row"><span class="k-label">Public Key (Ed25519):</span> <span class="mono k-val">207a067892821e25d770f1fba0c47c11ff4b813e54162ece9eb839e076231ab6</span></div>
-            <div class="key-row"><span class="k-label">Payload Hash (SHA-256):</span> <span class="mono k-val">d19488bbfe101a91e5e69bf17b07db36ec88f9810f135bfa37ad740445d31518</span></div>
+
+          <!-- Right Sidebar: Engine Capabilities & Stack -->
+          <aside class="launch-aside">
+            <div class="aside-block">
+              <div class="aside-title">AUDIT ENGINE STACK</div>
+              <div class="stack-row"><span class="mono">Python 3</span><span class="text-secondary">Core Engine · Ed25519 · CLI</span></div>
+              <div class="stack-row"><span class="mono">C++17</span><span class="text-secondary">Streaming O(1) PII/Luhn Scanner</span></div>
+              <div class="stack-row"><span class="mono">Java 17</span><span class="text-secondary">Standalone ZIP/SHA-256 Verifier</span></div>
+              <div class="stack-row"><span class="mono">JS/HTML/CSS</span><span class="text-secondary">Offline WebCrypto Workbench</span></div>
+            </div>
+
+            <div class="aside-block">
+              <div class="aside-title">WHAT GETS SCANNED</div>
+              <ul class="check-list">
+                <li><strong>Prompts:</strong> Secret token leakage &amp; override resistance</li>
+                <li><strong>Datasets:</strong> Luhn Mod-10 cards, SSNs, emails, phones</li>
+                <li><strong>RAG Docs:</strong> Hidden HTML/Markdown injection payloads</li>
+                <li><strong>Agent Tools:</strong> Unsafe <code>eval()</code>, <code>os.system()</code>, shell calls</li>
+                <li><strong>Configs:</strong> Exposed OpenAI/Anthropic/AWS/DB secrets</li>
+              </ul>
+            </div>
+
+            <div class="aside-block">
+              <div class="aside-title">CRYPTOGRAPHIC GUARANTEES</div>
+              <p class="text-xs text-secondary" style="line-height: 1.55;">
+                Every rule pack is verified via <strong>Ed25519</strong> before load. Every finding is hashed into a sequential <strong>SHA-256 chain</strong> inside a byte-deterministic <code>evidence.zip</code>. Identical inputs yield identical ZIP checksums.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 2: LIVE SCAN THEATRE (STREAM + SURFACE RADAR) -->
+      <!-- ======================================================== -->
+      <section class="view-panel" id="view-theatre">
+        <div class="theatre-split">
+          <div class="theatre-left">
+            <div class="panel-toolbar">
+              <div class="toolbar-left">
+                <span class="state-dot" id="scan-state-dot"></span>
+                <strong id="scan-status-text">READY TO AUDIT</strong>
+                <span class="mono text-muted text-xs" id="scan-timer">00:00.00</span>
+              </div>
+              <div class="toolbar-right">
+                <button class="btn btn-secondary btn-xs" id="btn-rerun-scan">Re-Run</button>
+                <button class="btn btn-danger btn-xs" id="btn-cancel-scan" disabled>Cancel</button>
+                <button class="btn btn-primary btn-xs" id="btn-goto-results">Inspect Findings →</button>
+              </div>
+            </div>
+            <div class="probe-stream" id="scan-stream-container">
+              <!-- Live streamed probes -->
+            </div>
           </div>
-          <div class="rules-table-container">
-            <table class="rules-table">
+
+          <aside class="theatre-right">
+            <div class="aside-block">
+              <div class="aside-title">LIVE AUDIT TELEMETRY</div>
+              <div class="kpi-grid">
+                <div class="kpi-cell"><span class="kpi-label">FILES</span><span class="kpi-val mono" id="kpi-files">5</span></div>
+                <div class="kpi-cell"><span class="kpi-label">PROBES</span><span class="kpi-val mono" id="kpi-probes">13</span></div>
+                <div class="kpi-cell"><span class="kpi-label">CRITICAL</span><span class="kpi-val mono text-fail" id="kpi-crit">4</span></div>
+                <div class="kpi-cell"><span class="kpi-label">HIGH</span><span class="kpi-val mono text-warn" id="kpi-high">9</span></div>
+              </div>
+            </div>
+
+            <div class="aside-block">
+              <div class="aside-title">SURFACE DISCOVERY MAP</div>
+              <div class="surface-tree" id="surface-tree-root">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <div class="aside-block">
+              <div class="aside-title">SEVERITY DISTRIBUTION</div>
+              <div class="dist-bar" id="severity-dist-bar">
+                <div class="dist-seg dist-crit" style="width: 31%;"></div>
+                <div class="dist-seg dist-high" style="width: 69%;"></div>
+              </div>
+              <div class="dist-legend mono text-xs">
+                <span class="text-fail">● Critical</span>
+                <span class="text-warn">● High</span>
+                <span class="text-pass">● Clean</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 3: RESULTS TRI-SPLIT FORENSIC INSPECTOR -->
+      <!-- ======================================================== -->
+      <section class="view-panel" id="view-results">
+        <div class="tri-split" id="results-tri-split">
+          <!-- Pane 1: Findings Queue -->
+          <div class="tri-pane pane-queue" id="pane-queue" style="width: 340px;">
+            <div class="queue-controls">
+              <input type="text" class="input-field" id="filter-search" placeholder="Filter by ID, file, rule… (j/k move)">
+              <div class="chip-row" id="filter-chips">
+                <button class="chip active" data-filter="all">All</button>
+                <button class="chip" data-filter="CRITICAL">Critical</button>
+                <button class="chip" data-filter="HIGH">High</button>
+                <button class="chip" data-filter="ISO/IEC 42001">ISO 42001</button>
+                <button class="chip" data-filter="GDPR / DPDP">GDPR</button>
+              </div>
+              <div class="bulk-bar">
+                <label class="check-inline"><input type="checkbox" id="bulk-select-all"><span>Select all</span></label>
+                <button class="btn btn-secondary btn-xs" id="btn-accept-risk" disabled title="Select one or more findings to record risk acceptance">Accept Risk</button>
+              </div>
+            </div>
+            <div class="queue-list" id="findings-list-root"></div>
+          </div>
+
+          <div class="pane-resizer" data-resize="left" title="Drag to resize pane"></div>
+
+          <!-- Pane 2: Forensic Detail + Code Viewer + Fix Diff -->
+          <div class="tri-pane pane-inspector" id="pane-detail-root"></div>
+
+          <div class="pane-resizer" data-resize="right" title="Drag to resize pane"></div>
+
+          <!-- Pane 3: Regulatory Rule Map -->
+          <div class="tri-pane pane-rulemap" id="pane-rule-root" style="width: 330px;"></div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 4: CRYPTOGRAPHIC EVIDENCE CHAIN + TAMPER SIMULATOR -->
+      <!-- ======================================================== -->
+      <section class="view-panel" id="view-evidence">
+        <div class="scroll-page">
+          <div class="page-head">
+            <div>
+              <h2>Cryptographic SHA-256 Evidence Chain</h2>
+              <p class="text-secondary">Real WebCrypto SHA-256 verification. Try clicking <strong>Simulate Tamper</strong> on any block to watch cryptographic break propagation.</p>
+            </div>
+            <div class="head-actions">
+              <button class="btn btn-secondary" id="btn-reverify-all-chains">Re-Verify Entire Chain</button>
+              <button class="btn btn-primary" id="btn-export-evidence-zip">Download evidence.zip</button>
+            </div>
+          </div>
+
+          <div class="callout-box">
+            <strong>Plain Statement of Evidentiary Scope:</strong>
+            <code>evidence.zip</code> proves that these exact findings were generated deterministically from the audited project tree under signed rule pack <code>eu-ai-act-iso42001-nist-v1</code> with intact SHA-256 sequence continuity. It does <strong>not</strong> prove immunity against untested attack vectors or code modified after the audit timestamp.
+          </div>
+
+          <div class="chain-status-strip" id="chain-global-status">
+            <span class="badge badge-pass">CHAIN INTACT</span>
+            <span class="mono text-xs" id="chain-head-readout">Calculating WebCrypto SHA-256…</span>
+          </div>
+
+          <div class="timeline-list" id="evidence-timeline-root"></div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 5: ED25519 SIGNED RULE PACKS -->
+      <!-- ======================================================== -->
+      <section class="view-panel" id="view-rulepacks">
+        <div class="scroll-page">
+          <div class="page-head">
+            <div>
+              <h2>Signed Compliance Rule Packs</h2>
+              <p class="text-secondary">Rules are verified against an Ed25519 root public key before load. Unsigned packs are blocked by default.</p>
+            </div>
+            <div class="head-actions">
+              <label class="btn btn-secondary" for="rulepack-file-input">Load .sealed-pack.json…</label>
+              <input type="file" id="rulepack-file-input" accept=".json" hidden>
+              <button class="btn btn-danger" id="btn-test-tamper-pack">Test Tampered Pack Refusal</button>
+            </div>
+          </div>
+
+          <div class="pack-card">
+            <div class="pack-card-head">
+              <div>
+                <span class="badge badge-pass">ED25519 SIGNATURE VALID</span>
+                <h3 style="margin-top: 6px;">sealed-official-eu-nist-iso <span class="mono text-muted">v1.0.0</span></h3>
+                <p class="text-secondary text-xs">Issuer: SEALED Official Core Governance · Published 2026-01-01</p>
+              </div>
+              <span class="mono text-xs text-muted">8 Active Controls</span>
+            </div>
+            <div class="key-grid mono text-xs">
+              <div><span class="text-muted">PUBLIC KEY:</span> 207a067892821e25d770f1fba0c47c11ff4b813e54162ece9eb839e076231ab6</div>
+              <div><span class="text-muted">ALGORITHM: </span> Ed25519 (RFC 8032) + Canonical SHA-256</div>
+            </div>
+            <table class="data-table">
               <thead>
                 <tr>
                   <th>Rule ID</th>
                   <th>Control</th>
                   <th>Framework</th>
                   <th>Severity</th>
-                  <th>Title &amp; Target</th>
+                  <th>Rule Title &amp; Detection Target</th>
                 </tr>
               </thead>
-              <tbody id="installed-rules-tbody">
-                <!-- Injected via JavaScript -->
-              </tbody>
+              <tbody id="installed-rules-tbody"></tbody>
             </table>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ============================================================ -->
-    <!-- VIEW F: SETTINGS -->
-    <!-- ============================================================ -->
-    <section class="view-panel" id="view-settings">
-      <div class="settings-layout">
-        <h2>Auditor Configuration &amp; Key Management</h2>
-        <div class="settings-grid">
-          <div class="settings-card">
-            <h3>Model API Endpoints &amp; Keychain</h3>
-            <p class="text-secondary text-sm">Credentials are stored in the operating system Keychain (macOS Keychain / Linux SecretService) and never written to disk or evidence packs.</p>
-            <div class="form-group">
-              <label>Default LLM Provider</label>
-              <select class="input-select" id="cfg-provider">
-                <option value="offline">Offline / Local Static Analysis (Default)</option>
-                <option value="openai">OpenAI (User-provided endpoint)</option>
-                <option value="anthropic">Anthropic (User-provided endpoint)</option>
-                <option value="ollama">Ollama (Localhost)</option>
-              </select>
+      <!-- ======================================================== -->
+      <!-- VIEW 6: CI/CD PIPELINE GATE GENERATOR -->
+      <!-- ======================================================== -->
+      <section class="view-panel" id="view-cigate">
+        <div class="scroll-page">
+          <div class="page-head">
+            <div>
+              <h2>CI/CD Compliance Gate Generator</h2>
+              <p class="text-secondary">Drop into your repository to block pull requests on exit code <code>1</code> (findings) or <code>2</code> (security violation).</p>
             </div>
-            <div class="form-group">
-              <label>API Key (Stored securely)</label>
-              <input type="password" class="input-text" id="cfg-apikey" value="sk-live-configured-in-keychain-mock" placeholder="sk-...">
+          </div>
+
+          <div class="ci-tabs" id="ci-tabs">
+            <button class="ci-tab active" data-ci="github">GitHub Actions</button>
+            <button class="ci-tab" data-ci="gitlab">GitLab CI</button>
+            <button class="ci-tab" data-ci="circleci">CircleCI</button>
+            <button class="ci-tab" data-ci="java_cpp">Java + C++17 Verification</button>
+          </div>
+
+          <div class="code-card">
+            <div class="code-card-head">
+              <span class="mono text-xs text-secondary" id="ci-filename">.github/workflows/ci.yml</span>
+              <button class="btn btn-secondary btn-xs" id="btn-copy-ci">Copy Snippet</button>
             </div>
-            <div class="form-group">
-              <label class="checkbox-label">
+            <pre class="code-pre"><code id="ci-code-snippet"></code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 7: STANDALONE REPORT VIEWER -->
+      <!-- ======================================================== -->
+      <section class="view-panel" id="view-report">
+        <div class="report-shell">
+          <div class="panel-toolbar">
+            <div class="toolbar-left">
+              <strong class="mono">report.html</strong>
+              <span class="badge badge-pass">STRICT CSP · ZERO SCRIPTS · A4 PRINTABLE</span>
+            </div>
+            <div class="toolbar-right">
+              <button class="btn btn-secondary btn-xs" id="btn-download-report">Download report.html</button>
+              <button class="btn btn-primary btn-xs" id="btn-print-report">Print / Save PDF</button>
+            </div>
+          </div>
+          <div class="report-frame-wrap">
+            <iframe id="report-frame" title="SEALED Audit Report"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 8: SETTINGS & KEYCHAIN -->
+      <!-- ======================================================== -->
+      <section class="view-panel" id="view-settings">
+        <div class="scroll-page">
+          <div class="page-head">
+            <div>
+              <h2>Auditor Settings &amp; Credential Boundaries</h2>
+              <p class="text-secondary">API credentials stay in the OS Keychain and are strictly redacted from logs, errors, and evidence packs.</p>
+            </div>
+          </div>
+
+          <div class="settings-two-col">
+            <div class="settings-box">
+              <h3>Model Endpoint &amp; Egress Policy</h3>
+              <div class="field-group">
+                <label for="cfg-provider">Active Probe Mode</label>
+                <select class="input-field" id="cfg-provider">
+                  <option value="offline">Offline Static &amp; Local Simulation (Default — Air-Gapped)</option>
+                  <option value="openai">OpenAI Compatible Endpoint (User-Owned)</option>
+                  <option value="anthropic">Anthropic Endpoint (User-Owned)</option>
+                  <option value="ollama">Local Ollama Instance (127.0.0.1:11434)</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="cfg-apikey">API Key (Stored in OS Keychain — never exported)</label>
+                <input type="password" class="input-field mono" id="cfg-apikey" value="sk-keychain-protected-token">
+              </div>
+              <label class="check-inline">
                 <input type="checkbox" id="cfg-allow-private">
-                <span>Allow private RFC1918 / loopback endpoints (UNSAFE)</span>
+                <span>Allow private RFC1918 / loopback endpoints (<code>--allow-private-endpoints</code>)</span>
               </label>
-              <p class="text-muted text-xs">Required only when auditing self-hosted models in a private VPC or local Docker.</p>
+              <p class="text-xs text-muted">Cloud metadata IPs (<code>169.254.169.254</code>) and non-HTTP schemes remain permanently blocked.</p>
             </div>
-          </div>
 
-          <div class="settings-card">
-            <h3>Audit Execution Preferences</h3>
-            <div class="form-group">
-              <label>Evidence Retention Policy</label>
-              <select class="input-select" id="cfg-retention">
-                <option value="30">Retain on disk for 30 days</option>
-                <option value="90">Retain on disk for 90 days</option>
-                <option value="indefinite">Retain indefinitely</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="checkbox-label">
+            <div class="settings-box">
+              <h3>Display, Accessibility &amp; Retention</h3>
+              <div class="field-group">
+                <label for="cfg-theme-select">Color Theme</label>
+                <select class="input-field" id="cfg-theme-select">
+                  <option value="dark">Dark Instrument Panel (Default)</option>
+                  <option value="light">Light Paper Instrument</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="cfg-retention">Evidence Retention Window</label>
+                <select class="input-field" id="cfg-retention">
+                  <option value="30">30 days local retention</option>
+                  <option value="90">90 days local retention</option>
+                  <option value="indefinite">Indefinite (archival)</option>
+                </select>
+              </div>
+              <label class="check-inline">
                 <input type="checkbox" id="cfg-reduced-motion">
-                <span>Force Reduced Motion (Instant transitions)</span>
+                <span>Force Reduced Motion (0ms instant transitions)</span>
               </label>
             </div>
-            <div class="form-group">
-              <label>Interface Language</label>
-              <select class="input-select" id="cfg-lang">
-                <option value="en">English (Factual / Plain)</option>
-              </select>
-            </div>
           </div>
         </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- BOTTOM TELEMETRY STATUS BAR (26px) -->
+  <!-- ============================================================ -->
+  <footer class="status-bar mono">
+    <div class="status-left">
+      <span>ENGINE: Python 3 + C++17 + Java</span>
+      <span class="sep">·</span>
+      <button class="status-link" id="btn-copy-head-hash" title="Copy current SHA-256 chain head">HEAD: <span id="status-chain-head">computing…</span></button>
+    </div>
+    <div class="status-right">
+      <span id="status-counts">4 CRIT · 9 HIGH · 0 MED</span>
+      <span class="sep">·</span>
+      <span>⌘K Command · j/k Move · t Theme</span>
+    </div>
+  </footer>
+
+  <!-- ============================================================ -->
+  <!-- COMMAND PALETTE DIALOG (Cmd/Ctrl + K) -->
+  <!-- ============================================================ -->
+  <dialog class="modal-dialog cmd-dialog" id="cmd-modal">
+    <div class="cmd-wrap">
+      <div class="cmd-input-row">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="cmd-search-input" placeholder="Type a command or view name…" autocomplete="off">
+        <kbd>ESC</kbd>
       </div>
-    </section>
+      <div class="cmd-results" id="cmd-results-list"></div>
+    </div>
+  </dialog>
 
-    <!-- ============================================================ -->
-    <!-- VIEW G: CI GATE -->
-    <!-- ============================================================ -->
-    <section class="view-panel" id="view-cigate">
-      <div class="cigate-layout">
-        <div class="section-header">
-          <h2>CI/CD Pipeline Gate Generator</h2>
-          <p class="text-secondary">Integrate SEALED into your continuous integration workflow to block pull requests with safety or regulatory regressions.</p>
-        </div>
-        <div class="ci-selector-row">
-          <button class="ci-tab active" data-ci="github">GitHub Actions</button>
-          <button class="ci-tab" data-ci="gitlab">GitLab CI</button>
-          <button class="ci-tab" data-ci="circleci">CircleCI</button>
-          <button class="ci-tab" data-ci="precommit">Pre-Commit Hook</button>
-        </div>
-        <div class="snippet-container">
-          <div class="snippet-header">
-            <span class="mono text-muted" id="ci-filename">.github/workflows/ai-compliance.yml</span>
-            <button class="btn btn-sm btn-secondary" id="btn-copy-ci">Copy Snippet</button>
-          </div>
-          <pre class="ci-code-block"><code id="ci-code-snippet"># SEALED CI Gate
-name: AI Compliance &amp; Safety Gate
-on: [push, pull_request]
-
-jobs:
-  sealed-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install SEALED CLI
-        run: |
-          curl -sSL https://get.sealed.security/linux-x86_64 | tar -xz -C /usr/local/bin
-
-      - name: Execute Offline AI Compliance Audit
-        run: |
-          # Block outbound network egress to guarantee zero telemetry
-          sealed scan . --output-dir ./audit-artifacts --offline
-
-      - name: Archive Compliance Evidence Pack
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sealed-evidence
-          path: |
-            ./audit-artifacts/report.html
-            ./audit-artifacts/evidence.zip
-</code></pre>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================ -->
-    <!-- VIEW H: REPORT VIEWER -->
-    <!-- ============================================================ -->
-    <section class="view-panel" id="view-report">
-      <div class="report-viewer-layout">
-        <div class="report-toolbar">
-          <span class="mono">report.html (Stand-alone Render)</span>
-          <div class="report-actions">
-            <button class="btn btn-secondary btn-sm" id="btn-print-report">Print / Save as PDF</button>
-            <button class="btn btn-secondary btn-sm" id="btn-open-raw-report">Open in New Tab</button>
-          </div>
-        </div>
-        <div class="report-iframe-wrap">
-          <iframe id="report-frame" title="SEALED Report" src="about:blank"></iframe>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Airgap Modal Dialog -->
+  <!-- AIRGAP PROOF DIALOG -->
   <dialog class="modal-dialog" id="airgap-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Zero-Telemetry &amp; Air-Gap Guarantee</h3>
-        <button class="modal-close" id="btn-close-airgap">&times;</button>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Air-Gapped Zero-Telemetry Guarantee</h3>
+        <button class="modal-x" data-close-dialog>&times;</button>
       </div>
       <div class="modal-body">
-        <p><strong>SEALED never contacts any server belonging to its authors.</strong></p>
-        <ul class="modal-list">
-          <li><strong>Zero Telemetry:</strong> No analytics, crash reporting, license verification, or update checks exist in the binary.</li>
-          <li><strong>Strict Egress Control:</strong> The network is disabled by default. Connections are only permitted if you explicitly configure an AI endpoint you control.</li>
-          <li><strong>Offline Testing:</strong> This guarantee is verified in CI by severing the network and asserting the full scan completes.</li>
+        <p><strong>SEALED never phones home.</strong> Zero analytics, zero license servers, zero crash reporters, zero remote fonts or CDNs.</p>
+        <ul class="modal-ul">
+          <li><strong>0 Bytes Transmitted:</strong> All discovery, Luhn PII scans, attack probes, and SHA-256 hashing run 100% locally.</li>
+          <li><strong>CI-Verified:</strong> <code>tests/run_all_tests.py</code> blocks network proxies and asserts zero telemetry hosts across the entire repo.</li>
+          <li><strong>Strict CSP:</strong> Exported <code>report.html</code> locks <code>default-src 'none'; script-src 'none'</code>.</li>
         </ul>
-        <div class="modal-code">
-          <code>assert_network_blocked() => PASS (0 egress packets)</code>
-        </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="btn-dismiss-airgap">Close</button>
+      <div class="modal-foot">
+        <button class="btn btn-primary" data-close-dialog>Close</button>
       </div>
     </div>
   </dialog>
 
-  <!-- Risk Acceptance Modal Dialog -->
+  <!-- RISK ACCEPTANCE DIALOG -->
   <dialog class="modal-dialog" id="risk-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Accept Compliance Risk</h3>
-        <button class="modal-close" id="btn-close-risk">&times;</button>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Record Formal Risk Acceptance</h3>
+        <button class="modal-x" data-close-dialog>&times;</button>
       </div>
       <div class="modal-body">
-        <p>You are marking the selected finding(s) as an <strong>Accepted Risk</strong>. In regulatory compliance frameworks (EU AI Act, ISO 42001), exceptions must be substantiated with written rationale.</p>
-        <div class="form-group" style="margin-top: 16px;">
-          <label><strong>Mandatory Auditor Justification</strong></label>
-          <textarea class="input-text" id="risk-reason-input" rows="4" placeholder="Explain the compensating control or legal basis for accepting this risk (e.g. synthetic test data only, isolated sandbox)..."></textarea>
+        <p>Regulatory frameworks (EU AI Act Art. 9, ISO 42001) require a written justification for any accepted compliance risk.</p>
+        <div class="field-group" style="margin-top: 12px;">
+          <label for="risk-reason-input">Written Auditor Justification (min. 10 chars)</label>
+          <textarea class="input-field" id="risk-reason-input" rows="4" placeholder="State the compensating control or scope exemption (e.g., synthetic test fixture isolated from production)…"></textarea>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="btn-cancel-risk">Cancel</button>
-        <button class="btn btn-primary" id="btn-confirm-risk" disabled>Record Risk Acceptance</button>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" data-close-dialog>Cancel</button>
+        <button class="btn btn-primary" id="btn-confirm-risk" disabled>Record Exemption</button>
       </div>
     </div>
   </dialog>
 
+  <!-- TAMPERED RULE PACK REFUSAL DIALOG -->
+  <dialog class="modal-dialog" id="tamper-pack-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 class="text-fail">Unsigned / Tampered Rule Pack Refused</h3>
+        <button class="modal-x" data-close-dialog>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Ed25519 signature verification FAILED.</strong> The rule payload does not match the trusted root public key.</p>
+        <p class="text-secondary text-xs" style="margin-top: 8px;">Why this is blocked: an adversary who alters a rule pack can silently disable critical prompt-injection or PII rules to fake a passing CI gate (<code>exit 0</code>).</p>
+        <label class="check-inline" style="margin-top: 14px;">
+          <input type="checkbox" id="chk-unsigned-override">
+          <span>I accept the security risk and explicitly want to load this unsigned pack for local testing.</span>
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" data-close-dialog>Keep Blocked (Recommended)</button>
+        <button class="btn btn-danger" id="btn-confirm-unsigned" disabled>Load Unsigned Pack</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
 </html>

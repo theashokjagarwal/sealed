@@ -1,4 +1,4 @@
-name: SEALED Security & Determinism CI
+name: SEALED Security, Determinism & Multi-Engine CI
 
 on:
   push:
@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  security-and-determinism:
-    name: Security Controls & Determinism (${{ matrix.os }})
+  audit-and-verify:
+    name: Python Core + C++17 Scanner + Java Verifier (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -22,32 +22,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Ensure unzip and ruby are available
-        if: runner.os == 'Linux'
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Run All 9 Security, Air-Gap & Determinism Tests (Python)
+        run: python3 tests/run_all_tests.py
+
+      - name: Build & Smoke-Test C++17 Streaming PII Scanner
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ruby-full unzip
+          g++ -std=c++17 -O2 -Wall -Wextra -o native_cpp/sealed_fast_scanner native_cpp/sealed_fast_scanner.cpp
+          set +e
+          ./native_cpp/sealed_fast_scanner ./fixture-project
+          CPP_EXIT=$?
+          set -e
+          test "$CPP_EXIT" -eq 1
+          ./native_cpp/sealed_fast_scanner ./clean-project
 
-      - name: Run Full Security, Air-Gap & Determinism Suite (9 Tests)
-        run: ./tests/run_all_tests.sh
-
-      - name: Verify Determinism Against Planted Fixture
+      - name: Generate Deterministic Evidence & Verify with Java Verifier
         run: |
           set +e
-          ./bin/sealed scan ./fixture-project --output-dir ./ci-run-1 --offline
-          EXIT1=$?
-          ./bin/sealed scan ./fixture-project --output-dir ./ci-run-2 --offline
-          EXIT2=$?
+          python3 sealed.py scan ./fixture-project --output-dir ./ci-run-1 --offline
+          E1=$?
+          python3 sealed.py scan ./fixture-project --output-dir ./ci-run-2 --offline
+          E2=$?
           set -e
-          test "$EXIT1" -eq 1
-          test "$EXIT2" -eq 1
+          test "$E1" -eq 1
+          test "$E2" -eq 1
           diff -q ./ci-run-1/evidence.zip ./ci-run-2/evidence.zip
-          ./bin/sealed verify ./ci-run-1/evidence.zip
 
-      - name: Verify Clean & Non-AI Projects Pass (Exit 0)
-        run: |
-          ./bin/sealed scan ./clean-project --output-dir ./ci-clean --offline
-          ./bin/sealed scan ./non-ai-project --output-dir ./ci-non-ai --offline
+          javac java_cli/SealedVerifier.java
+          java -cp java_cli SealedVerifier ./ci-run-1/evidence.zip
 
       - name: Upload Evidence Artifacts
         if: always()

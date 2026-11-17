@@ -1,6 +1,14 @@
-# Rust / Cargo build outputs
-/target/
-**/*.rs.bk
+# Python bytecode & virtualenvs
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Java compiled classes
+*.class
+
+# C++ compiled binaries
+native_cpp/sealed_fast_scanner
 
 # macOS / Editor artifacts
 .DS_Store
@@ -9,6 +17,8 @@
 .vscode/
 .idea/
 
-# Local test & audit run outputs
+# Local test & audit outputs
 /audit-artifacts/
+/ci-run-1/
+/ci-run-2/
 *.tmp

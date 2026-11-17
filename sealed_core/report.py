@@ -1,70 +1,48 @@
-//! Deterministic HTML Report Generator.
-//! Zero remote origins, zero inline external scripts, strict CSP, A4 print-optimized styling.
+"""Deterministic standalone HTML report generator with strict CSP and A4 print styling."""
 
-use crate::rule_engine::EvaluatedFinding;
-use crate::evidence::EvidenceManifest;
-use crate::security::html_escape;
+from typing import Any, Dict, List
 
-pub struct ReportGenerator;
+from .security import html_escape
 
-impl ReportGenerator {
-    pub fn generate_html(
-        manifest: &EvidenceManifest,
-        findings: &[EvaluatedFinding],
-    ) -> String {
-        let mut findings_rows = String::new();
 
-        for f in findings {
-            let status_badge_class = match f.severity.to_uppercase().as_str() {
-                "CRITICAL" => "badge-fail",
-                "HIGH" => "badge-fail",
-                "MEDIUM" => "badge-warn",
-                _ => "badge-muted",
-            };
+def generate_report_html(manifest: Dict[str, Any], findings: List[Dict[str, Any]]) -> str:
+    overall_status = "PASS" if not findings else "FAIL"
+    overall_class = "badge-pass" if not findings else "badge-fail"
 
-            let row = format!(
-                r#"<tr class="finding-row">
-                    <td><span class="badge {badge_class}">{severity}</span></td>
-                    <td><span class="mono-code">{finding_id}</span></td>
-                    <td><strong>{control_id}</strong><div class="sub-text">{framework}</div></td>
-                    <td>
-                        <div class="finding-title">{title}</div>
-                        <div class="finding-clause">{clause}</div>
-                        <div class="mono-path">{file_path}:{line_num}</div>
-                        <details class="evidence-details">
-                            <summary>Inspect Raw Telemetry & Evidence</summary>
-                            <div class="evidence-body">
-                                <strong>Probe Payload:</strong>
-                                <pre><code>{raw_probe}</code></pre>
-                                <strong>Observed Model Response:</strong>
-                                <pre><code>{raw_response}</code></pre>
-                                <strong>Forensic Evidence:</strong>
-                                <div>{evidence}</div>
-                            </div>
-                        </details>
-                    </td>
-                </tr>"#,
-                badge_class = status_badge_class,
-                severity = html_escape(&f.severity),
-                finding_id = html_escape(&f.finding_id),
-                control_id = html_escape(&f.control_id),
-                framework = html_escape(&f.framework),
-                title = html_escape(&f.title),
-                clause = html_escape(&f.clause),
-                file_path = html_escape(&f.file_path),
-                line_num = f.line_number,
-                raw_probe = html_escape(&f.raw_probe),
-                raw_response = html_escape(&f.raw_response),
-                evidence = html_escape(&f.evidence),
-            );
-            findings_rows.push_str(&row);
-        }
+    rows = []
+    for f in findings:
+        sev = str(f.get("severity", "LOW")).upper()
+        badge_class = "badge-fail" if sev in ("CRITICAL", "HIGH") else ("badge-warn" if sev == "MEDIUM" else "badge-muted")
+        rows.append(
+            f"""<tr class="finding-row">
+    <td><span class="badge {badge_class}">{html_escape(sev)}</span></td>
+    <td><span class="mono-code">{html_escape(f['finding_id'])}</span></td>
+    <td><strong>{html_escape(f['control_id'])}</strong><div class="sub-text">{html_escape(f['framework'])}</div></td>
+    <td>
+        <div class="finding-title">{html_escape(f['title'])}</div>
+        <div class="finding-clause">{html_escape(f['clause'])}</div>
+        <div class="mono-path">{html_escape(f['file_path'])}:{int(f['line_number'])}</div>
+        <details class="evidence-details">
+            <summary>Inspect Raw Telemetry &amp; Evidence</summary>
+            <div class="evidence-body">
+                <strong>Probe Payload:</strong>
+                <pre><code>{html_escape(f['raw_probe'])}</code></pre>
+                <strong>Observed Model Response:</strong>
+                <pre><code>{html_escape(f['raw_response'])}</code></pre>
+                <strong>Forensic Evidence:</strong>
+                <div>{html_escape(f['evidence'])}</div>
+            </div>
+        </details>
+    </td>
+</tr>"""
+        )
 
-        let overall_status = if findings.is_empty() { "PASS" } else { "FAIL" };
-        let overall_class = if findings.is_empty() { "badge-pass" } else { "badge-fail" };
+    rows_html = "\n".join(rows) if rows else (
+        '<tr><td colspan="4" style="text-align:center;color:var(--state-pass);padding:24px;">'
+        'Zero compliance or safety violations discovered.</td></tr>'
+    )
 
-        format!(
-            r#"<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -127,16 +105,8 @@ impl ReportGenerator {
             padding-bottom: 24px;
             margin-bottom: 24px;
         }}
-        .title-block h1 {{
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-        }}
-        .title-block p {{
-            color: var(--text-secondary);
-            font-size: 13px;
-            margin-top: 4px;
-        }}
+        .title-block h1 {{ font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }}
+        .title-block p {{ color: var(--text-secondary); font-size: 13px; margin-top: 4px; }}
         .badge {{
             display: inline-block;
             padding: 4px 8px;
@@ -163,12 +133,7 @@ impl ReportGenerator {
         }}
         .meta-item .meta-label {{ color: var(--text-secondary); font-size: 12px; text-transform: uppercase; }}
         .meta-item .meta-val {{ font-family: var(--font-mono); word-break: break-all; margin-top: 4px; }}
-        .findings-table {{
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            margin-top: 16px;
-        }}
+        .findings-table {{ width: 100%; border-collapse: collapse; text-align: left; margin-top: 16px; }}
         .findings-table th {{
             background: var(--bg-subtle);
             padding: 8px 12px;
@@ -187,6 +152,7 @@ impl ReportGenerator {
         .mono-path {{ font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); margin-top: 4px; }}
         .finding-title {{ font-weight: 600; color: var(--text-primary); font-size: 14px; }}
         .finding-clause {{ color: var(--text-secondary); font-size: 12px; margin-top: 2px; }}
+        .sub-text {{ color: var(--text-secondary); font-size: 12px; }}
         .evidence-details {{ margin-top: 8px; font-size: 12px; }}
         .evidence-details summary {{ cursor: pointer; color: var(--text-secondary); user-select: none; }}
         .evidence-body {{ margin-top: 8px; padding: 8px; background: var(--bg-subtle); border-radius: 4px; border: 1px solid var(--border-subtle); }}
@@ -202,8 +168,7 @@ impl ReportGenerator {
         @media print {{
             body {{ padding: 0; background: #fff; color: #000; }}
             .container {{ border: none; padding: 0; max-width: 100%; }}
-            .badge-fail {{ border: 1px solid #000; color: #000; }}
-            .badge-pass {{ border: 1px solid #000; color: #000; }}
+            .badge-fail, .badge-pass {{ border: 1px solid #000; color: #000; }}
         }}
     </style>
 </head>
@@ -222,19 +187,19 @@ impl ReportGenerator {
         <section class="meta-grid">
             <div class="meta-item">
                 <div class="meta-label">Audit Generator</div>
-                <div class="meta-val">{generator}</div>
+                <div class="meta-val">{html_escape(manifest['generator'])}</div>
             </div>
             <div class="meta-item">
                 <div class="meta-label">Rule Pack</div>
-                <div class="meta-val">{rule_pack_id} (v{rule_pack_version})</div>
+                <div class="meta-val">{html_escape(manifest['rule_pack_id'])} (v{html_escape(manifest['rule_pack_version'])})</div>
             </div>
             <div class="meta-item">
                 <div class="meta-label">Total Findings</div>
-                <div class="meta-val" style="font-size: 16px; font-weight: 600;">{total_findings}</div>
+                <div class="meta-val" style="font-size: 16px; font-weight: 600;">{int(manifest['total_findings'])}</div>
             </div>
             <div class="meta-item">
                 <div class="meta-label">Final Chain Hash (SHA-256)</div>
-                <div class="meta-val">{final_chain_hash}</div>
+                <div class="meta-val">{html_escape(manifest['final_chain_hash'])}</div>
             </div>
         </section>
 
@@ -250,30 +215,18 @@ impl ReportGenerator {
                     </tr>
                 </thead>
                 <tbody>
-                    {findings_rows}
+                    {rows_html}
                 </tbody>
             </table>
         </section>
 
         <footer class="disclaimer-box">
             <strong>Auditor Integrity Attestation &amp; Limitation of Proof:</strong><br>
-            {attestation_statement}<br><br>
+            {html_escape(manifest['attestation_statement'])}<br><br>
             <strong>Legal &amp; Technical Limitations:</strong><br>
-            {limitations_disclaimer}
+            {html_escape(manifest['limitations_disclaimer'])}
         </footer>
     </div>
 </body>
-</html>"#,
-            overall_class = overall_class,
-            overall_status = overall_status,
-            generator = html_escape(&manifest.generator),
-            rule_pack_id = html_escape(&manifest.rule_pack_id),
-            rule_pack_version = html_escape(&manifest.rule_pack_version),
-            total_findings = manifest.total_findings,
-            final_chain_hash = html_escape(&manifest.final_chain_hash),
-            findings_rows = findings_rows,
-            attestation_statement = html_escape(&manifest.attestation_statement),
-            limitations_disclaimer = html_escape(&manifest.limitations_disclaimer),
-        )
-    }
-}
+</html>
+"""
