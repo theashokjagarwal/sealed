@@ -151,8 +151,9 @@ unless [200, 201].include?(t_code)
   abort "[ERROR] Failed to create tree (HTTP #{t_code}): #{t_res['message']}"
 end
 
+commit_msg = ENV['COMMIT_MESSAGE'] || 'Initial commit: SEALED local-first AI compliance and safety auditor'
 cm_code, cm_res = api_request(:post, "/repos/#{OWNER}/#{REPO}/git/commits", {
-  message: 'Initial commit: SEALED local-first AI compliance and safety auditor',
+  message: commit_msg,
   tree: t_res['sha'],
   parents: [parent_sha]
 })

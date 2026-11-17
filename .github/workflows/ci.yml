@@ -1,0 +1,59 @@
+name: SEALED Security & Determinism CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  security-and-determinism:
+    name: Security Controls & Determinism (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Ensure unzip and ruby are available
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ruby-full unzip
+
+      - name: Run Full Security, Air-Gap & Determinism Suite (9 Tests)
+        run: ./tests/run_all_tests.sh
+
+      - name: Verify Determinism Against Planted Fixture
+        run: |
+          set +e
+          ./bin/sealed scan ./fixture-project --output-dir ./ci-run-1 --offline
+          EXIT1=$?
+          ./bin/sealed scan ./fixture-project --output-dir ./ci-run-2 --offline
+          EXIT2=$?
+          set -e
+          test "$EXIT1" -eq 1
+          test "$EXIT2" -eq 1
+          diff -q ./ci-run-1/evidence.zip ./ci-run-2/evidence.zip
+          ./bin/sealed verify ./ci-run-1/evidence.zip
+
+      - name: Verify Clean & Non-AI Projects Pass (Exit 0)
+        run: |
+          ./bin/sealed scan ./clean-project --output-dir ./ci-clean --offline
+          ./bin/sealed scan ./non-ai-project --output-dir ./ci-non-ai --offline
+
+      - name: Upload Evidence Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sealed-evidence-${{ matrix.os }}
+          path: |
+            ./ci-run-1/report.html
+            ./ci-run-1/evidence.zip
