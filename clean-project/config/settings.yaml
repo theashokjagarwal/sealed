@@ -1,0 +1,8 @@
+environment: production
+model_provider: openai
+model_name: gpt-4-turbo
+
+# Secure credential referencing via runtime environment variables
+openai_api_key_ref: "${TITANGATE_OPENAI_API_KEY}"
+anthropic_api_key_ref: "${TITANGATE_ANTHROPIC_API_KEY}"
+database_url_ref: "${DATABASE_URL}"

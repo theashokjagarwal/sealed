@@ -1,0 +1,4 @@
+{"id": "rec_001", "user": "Sarah Connor", "email": "sarah.connor@cyberdyne-defense.internal", "notes": "Customer requested high priority support."}
+{"id": "rec_002", "user": "John Matrix", "phone": "+1-415-555-0199", "ssn": "123-45-6789", "billing": "Verified government contract"}
+{"id": "rec_003", "user": "Elena Rostova", "payment_method": "Visa", "card_number": "4532-0150-0000-0007", "cvv": "921", "expiry": "12/28"}
+{"id": "rec_004", "user": "Marcus Wright", "address": "742 Evergreen Terrace, Springfield, OR 97477", "tax_id": "99-8877665"}

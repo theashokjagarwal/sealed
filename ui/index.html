@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
+  <title>SEALED — AI Compliance &amp; Safety Auditor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Persistent Top Rail / Header -->
+  <header class="top-rail">
+    <div class="rail-left">
+      <div class="brand">
+        <span class="brand-name">SEALED</span>
+        <span class="brand-ver">v1.0.0</span>
+      </div>
+      <div class="context-pill">
+        <span class="pill-label">TARGET:</span>
+        <span class="pill-val mono" id="active-target-label">fixture-project</span>
+      </div>
+      <div class="context-pill">
+        <span class="pill-label">PACK:</span>
+        <span class="pill-val mono" id="active-pack-label">eu-ai-act-iso42001-nist (v1.0)</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab active" data-view="launch" role="tab" aria-selected="true">Launch</button>
+      <button class="nav-tab" data-view="theatre" role="tab" aria-selected="false">Scan Theatre</button>
+      <button class="nav-tab" data-view="results" role="tab" aria-selected="false">Results <span class="tab-badge" id="results-count-badge">13</span></button>
+      <button class="nav-tab" data-view="evidence" role="tab" aria-selected="false">Evidence Chain</button>
+      <button class="nav-tab" data-view="rulepacks" data-tab-name="Rule Packs" role="tab" aria-selected="false">Rule Packs</button>
+      <button class="nav-tab" data-view="cigate" role="tab" aria-selected="false">CI Gate</button>
+      <button class="nav-tab" data-view="report" role="tab" aria-selected="false">Report</button>
+      <button class="nav-tab" data-view="settings" role="tab" aria-selected="false">Settings</button>
+    </nav>
+
+    <div class="rail-right">
+      <button class="status-badge badge-airgap" id="btn-airgap-info" title="Click to view airgap security proof">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>AIR-GAPPED (OFFLINE)</span>
+      </button>
+      <button class="icon-btn" id="theme-toggle" title="Toggle Light / Dark Theme" aria-label="Toggle theme">
+        <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport Router -->
+  <main class="viewport-container" id="main-viewport">
+
+    <!-- ============================================================ -->
+    <!-- VIEW A: LAUNCH / HOME -->
+    <!-- ============================================================ -->
+    <section class="view-panel active" id="view-launch">
+      <div class="launch-hero">
+        <div class="drop-target" id="folder-drop-zone">
+          <div class="drop-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h2 class="drop-title">Drop an AI project folder here</h2>
+          <p class="drop-desc">Scans code, system prompts, datasets, and tools offline against regulatory checklists.</p>
+          <div class="drop-cta-row">
+            <button class="btn btn-primary" id="btn-browse-folder">Browse Local Folder</button>
+            <button class="btn btn-secondary" id="btn-load-fixture">Audit Planted Fixture (13 Flaws)</button>
+            <button class="btn btn-secondary" id="btn-load-clean">Audit Clean AI Project (0 Flaws)</button>
+            <button class="btn btn-secondary" id="btn-load-non-ai">Audit Non-AI Project (0 AI Surfaces)</button>
+          </div>
+          <div class="keyboard-hints">
+            <span class="hint-item"><kbd>Cmd</kbd> + <kbd>O</kbd> Open Folder</span>
+            <span class="hint-item"><kbd>Cmd</kbd> + <kbd>K</kbd> Command Palette</span>
+            <span class="hint-item"><kbd>j</kbd>/<kbd>k</kbd> Navigate Findings</span>
+          </div>
+        </div>
+
+        <!-- Recent Audits Panel -->
+        <div class="recent-projects-panel">
+          <div class="section-header">
+            <h3>Recent Project Audits</h3>
+            <span class="text-muted">Local disk cache</span>
+          </div>
+          <div class="recent-list">
+            <div class="recent-item" data-project="fixture-project">
+              <div class="recent-info">
+                <span class="recent-name mono">./fixture-project</span>
+                <span class="recent-meta">TitanGate Support Agent &bull; 13 findings &bull; 2 mins ago</span>
+              </div>
+              <div class="recent-action">
+                <span class="badge badge-fail">NON-COMPLIANT</span>
+                <button class="btn btn-sm btn-secondary btn-re-audit">Run Audit</button>
+              </div>
+            </div>
+            <div class="recent-item" data-project="clean-project">
+              <div class="recent-info">
+                <span class="recent-name mono">./clean-project</span>
+                <span class="recent-meta">Hardened Agent &bull; 0 findings &bull; 10 mins ago</span>
+              </div>
+              <div class="recent-action">
+                <span class="badge badge-pass">PASSED</span>
+                <button class="btn btn-sm btn-secondary btn-re-audit">Run Audit</button>
+              </div>
+            </div>
+            <div class="recent-item" data-project="non-ai-project">
+              <div class="recent-info">
+                <span class="recent-name mono">./non-ai-project</span>
+                <span class="recent-meta">Order Billing Microservice &bull; 0 AI Surfaces &bull; 0 findings</span>
+              </div>
+              <div class="recent-action">
+                <span class="badge badge-pass">PASSED</span>
+                <button class="btn btn-sm btn-secondary btn-re-audit">Run Audit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW B: SCAN THEATRE (LIVE TELEMETRY STREAM) -->
+    <!-- ============================================================ -->
+    <section class="view-panel" id="view-theatre">
+      <div class="theatre-layout">
+        <div class="theatre-toolbar">
+          <div class="theatre-status-block">
+            <span class="pulse-indicator" id="scan-pulse"></span>
+            <span class="theatre-status-text" id="scan-status-text">SCAN IN PROGRESS</span>
+            <span class="mono text-muted" id="scan-timer">00:01.42</span>
+          </div>
+          <div class="theatre-metrics">
+            <div class="metric"><span class="m-label">Surfaces:</span> <span class="m-val mono" id="m-surfaces">6</span></div>
+            <div class="metric"><span class="m-label">Probes:</span> <span class="m-val mono" id="m-probes">13</span></div>
+            <div class="metric"><span class="m-label">Violations:</span> <span class="m-val mono text-fail" id="m-violations">13</span></div>
+          </div>
+          <div class="theatre-actions">
+            <button class="btn btn-danger btn-sm" id="btn-cancel-scan">Cancel Scan</button>
+          </div>
+        </div>
+
+        <div class="theatre-stream" id="scan-stream-container">
+          <!-- Real-time probe logs dynamically injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW C: RESULTS (PRIMARY TRI-SPLIT VIEWPORT) -->
+    <!-- ============================================================ -->
+    <section class="view-panel" id="view-results">
+      <div class="results-tri-split">
+        <!-- Pane 1: Findings List & Filter Rail -->
+        <aside class="tri-pane pane-list">
+          <div class="list-filter-bar">
+            <input type="text" class="input-filter" id="filter-search" placeholder="Filter findings (j/k to navigate)...">
+            <div class="filter-chips">
+              <button class="chip active" data-filter="all">All (13)</button>
+              <button class="chip chip-fail" data-filter="CRITICAL">Critical (4)</button>
+              <button class="chip chip-fail" data-filter="HIGH">High (9)</button>
+              <button class="chip" data-filter="EU AI Act">EU AI Act</button>
+              <button class="chip" data-filter="ISO/IEC 42001">ISO 42001</button>
+            </div>
+            <div class="bulk-action-bar">
+              <label class="checkbox-label"><input type="checkbox" id="bulk-select-all"> <span>Select all</span></label>
+              <button class="btn btn-sm btn-secondary" id="btn-accept-risk" disabled>Mark Accepted Risk</button>
+            </div>
+          </div>
+          <div class="findings-scroll-list" id="findings-list-root">
+            <!-- Dynamic findings items -->
+          </div>
+        </aside>
+
+        <!-- Pane 2: Forensic Detail Inspector -->
+        <main class="tri-pane pane-detail" id="pane-detail-root">
+          <!-- Selected finding details -->
+        </main>
+
+        <!-- Pane 3: Rule Map & Legal Controls -->
+        <aside class="tri-pane pane-rule" id="pane-rule-root">
+          <!-- Regulatory clause and legal mapping -->
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW D: EVIDENCE PACK (CRYPTOGRAPHIC TIMELINE) -->
+    <!-- ============================================================ -->
+    <section class="view-panel" id="view-evidence">
+      <div class="evidence-layout">
+        <div class="evidence-header">
+          <div>
+            <h2>Cryptographic Hash-Chain Evidence Pack</h2>
+            <p class="text-secondary">Every finding is deterministically chained using SHA-256 to ensure complete tamper-evidence.</p>
+          </div>
+          <div class="evidence-actions">
+            <button class="btn btn-primary" id="btn-export-evidence-zip">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Export evidence.zip
+            </button>
+            <button class="btn btn-secondary" id="btn-reverify-all-chains">Verify Entire Chain</button>
+          </div>
+        </div>
+
+        <div class="statement-card">
+          <h4>Limitation of Proof &amp; Evidentiary Disclaimer</h4>
+          <p>This export bundles raw audit telemetry, canonical finding payloads, and an unforgeable hash chain. <strong>What this ZIP proves:</strong> that the listed findings were produced deterministically from the specified project tree using signed rule pack <code>eu-ai-act-iso42001-nist-v1</code> at audit time. <strong>What it does NOT prove:</strong> that the model or system is immune to un-evaluated attack vectors or runtime modifications post-audit.</p>
+        </div>
+
+        <div class="timeline-container" id="evidence-timeline-root">
+          <!-- Chained blocks dynamically rendered -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW E: RULE PACKS (ED25519 VERIFICATION) -->
+    <!-- ============================================================ -->
+    <section class="view-panel" id="view-rulepacks">
+      <div class="rulepacks-layout">
+        <div class="section-header-row">
+          <div>
+            <h2>Installed Compliance Rule Packs</h2>
+            <p class="text-secondary">Official rules require cryptographic Ed25519 signature validation before activation.</p>
+          </div>
+          <button class="btn btn-secondary" id="btn-load-rulepack-file">Load Rule Pack from File / USB</button>
+        </div>
+
+        <div class="rulepack-card">
+          <div class="pack-top">
+            <div class="pack-meta">
+              <span class="pack-badge badge-pass">ED25519 VERIFIED (VALID)</span>
+              <h3>eu-ai-act-iso42001-nist-v1</h3>
+              <p class="mono text-muted">Issuer: SEALED Official Core Governance &bull; v1.0.0 &bull; 8 Rules</p>
+            </div>
+            <div class="pack-actions">
+              <button class="btn btn-sm btn-secondary" id="btn-test-tamper-pack">Simulate Tampered Pack</button>
+            </div>
+          </div>
+          <div class="pack-key-block">
+            <div class="key-row"><span class="k-label">Public Key (Ed25519):</span> <span class="mono k-val">207a067892821e25d770f1fba0c47c11ff4b813e54162ece9eb839e076231ab6</span></div>
+            <div class="key-row"><span class="k-label">Payload Hash (SHA-256):</span> <span class="mono k-val">d19488bbfe101a91e5e69bf17b07db36ec88f9810f135bfa37ad740445d31518</span></div>
+          </div>
+          <div class="rules-table-container">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Rule ID</th>
+                  <th>Control</th>
+                  <th>Framework</th>
+                  <th>Severity</th>
+                  <th>Title &amp; Target</th>
+                </tr>
+              </thead>
+              <tbody id="installed-rules-tbody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW F: SETTINGS -->
+    <!-- ============================================================ -->
+    <section class="view-panel" id="view-settings">
+      <div class="settings-layout">
+        <h2>Auditor Configuration &amp; Key Management</h2>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3>Model API Endpoints &amp; Keychain</h3>
+            <p class="text-secondary text-sm">Credentials are stored in the operating system Keychain (macOS Keychain / Linux SecretService) and never written to disk or evidence packs.</p>
+            <div class="form-group">
+              <label>Default LLM Provider</label>
+              <select class="input-select" id="cfg-provider">
+                <option value="offline">Offline / Local Static Analysis (Default)</option>
+                <option value="openai">OpenAI (User-provided endpoint)</option>
+                <option value="anthropic">Anthropic (User-provided endpoint)</option>
+                <option value="ollama">Ollama (Localhost)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>API Key (Stored securely)</label>
+              <input type="password" class="input-text" id="cfg-apikey" value="sk-live-configured-in-keychain-mock" placeholder="sk-...">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="cfg-allow-private">
+                <span>Allow private RFC1918 / loopback endpoints (UNSAFE)</span>
+              </label>
+              <p class="text-muted text-xs">Required only when auditing self-hosted models in a private VPC or local Docker.</p>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>Audit Execution Preferences</h3>
+            <div class="form-group">
+              <label>Evidence Retention Policy</label>
+              <select class="input-select" id="cfg-retention">
+                <option value="30">Retain on disk for 30 days</option>
+                <option value="90">Retain on disk for 90 days</option>
+                <option value="indefinite">Retain indefinitely</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="cfg-reduced-motion">
+                <span>Force Reduced Motion (Instant transitions)</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Interface Language</label>
+              <select class="input-select" id="cfg-lang">
+                <option value="en">English (Factual / Plain)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW G: CI GATE -->
+    <!-- ============================================================ -->
+    <section class="view-panel" id="view-cigate">
+      <div class="cigate-layout">
+        <div class="section-header">
+          <h2>CI/CD Pipeline Gate Generator</h2>
+          <p class="text-secondary">Integrate SEALED into your continuous integration workflow to block pull requests with safety or regulatory regressions.</p>
+        </div>
+        <div class="ci-selector-row">
+          <button class="ci-tab active" data-ci="github">GitHub Actions</button>
+          <button class="ci-tab" data-ci="gitlab">GitLab CI</button>
+          <button class="ci-tab" data-ci="circleci">CircleCI</button>
+          <button class="ci-tab" data-ci="precommit">Pre-Commit Hook</button>
+        </div>
+        <div class="snippet-container">
+          <div class="snippet-header">
+            <span class="mono text-muted" id="ci-filename">.github/workflows/ai-compliance.yml</span>
+            <button class="btn btn-sm btn-secondary" id="btn-copy-ci">Copy Snippet</button>
+          </div>
+          <pre class="ci-code-block"><code id="ci-code-snippet"># SEALED CI Gate
+name: AI Compliance &amp; Safety Gate
+on: [push, pull_request]
+
+jobs:
+  sealed-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SEALED CLI
+        run: |
+          curl -sSL https://get.sealed.security/linux-x86_64 | tar -xz -C /usr/local/bin
+
+      - name: Execute Offline AI Compliance Audit
+        run: |
+          # Block outbound network egress to guarantee zero telemetry
+          sealed scan . --output-dir ./audit-artifacts --offline
+
+      - name: Archive Compliance Evidence Pack
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sealed-evidence
+          path: |
+            ./audit-artifacts/report.html
+            ./audit-artifacts/evidence.zip
+</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW H: REPORT VIEWER -->
+    <!-- ============================================================ -->
+    <section class="view-panel" id="view-report">
+      <div class="report-viewer-layout">
+        <div class="report-toolbar">
+          <span class="mono">report.html (Stand-alone Render)</span>
+          <div class="report-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-print-report">Print / Save as PDF</button>
+            <button class="btn btn-secondary btn-sm" id="btn-open-raw-report">Open in New Tab</button>
+          </div>
+        </div>
+        <div class="report-iframe-wrap">
+          <iframe id="report-frame" title="SEALED Report" src="about:blank"></iframe>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Airgap Modal Dialog -->
+  <dialog class="modal-dialog" id="airgap-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Zero-Telemetry &amp; Air-Gap Guarantee</h3>
+        <button class="modal-close" id="btn-close-airgap">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>SEALED never contacts any server belonging to its authors.</strong></p>
+        <ul class="modal-list">
+          <li><strong>Zero Telemetry:</strong> No analytics, crash reporting, license verification, or update checks exist in the binary.</li>
+          <li><strong>Strict Egress Control:</strong> The network is disabled by default. Connections are only permitted if you explicitly configure an AI endpoint you control.</li>
+          <li><strong>Offline Testing:</strong> This guarantee is verified in CI by severing the network and asserting the full scan completes.</li>
+        </ul>
+        <div class="modal-code">
+          <code>assert_network_blocked() => PASS (0 egress packets)</code>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btn-dismiss-airgap">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Risk Acceptance Modal Dialog -->
+  <dialog class="modal-dialog" id="risk-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Accept Compliance Risk</h3>
+        <button class="modal-close" id="btn-close-risk">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>You are marking the selected finding(s) as an <strong>Accepted Risk</strong>. In regulatory compliance frameworks (EU AI Act, ISO 42001), exceptions must be substantiated with written rationale.</p>
+        <div class="form-group" style="margin-top: 16px;">
+          <label><strong>Mandatory Auditor Justification</strong></label>
+          <textarea class="input-text" id="risk-reason-input" rows="4" placeholder="Explain the compensating control or legal basis for accepting this risk (e.g. synthetic test data only, isolated sandbox)..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-risk">Cancel</button>
+        <button class="btn btn-primary" id="btn-confirm-risk" disabled>Record Risk Acceptance</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Rust / Cargo build outputs
+/target/
+**/*.rs.bk
+
+# macOS / Editor artifacts
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local test & audit run outputs
+/audit-artifacts/
+*.tmp

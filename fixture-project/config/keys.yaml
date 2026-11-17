@@ -1,0 +1,9 @@
+# TitanGate Deployment Secrets & Configuration
+environment: production
+model_provider: openai
+model_name: gpt-4-turbo
+
+# CRITICAL SECURITY VIOLATION: Exposed hardcoded secret credentials
+openai_api_key: "sk-live-99238472918392817293847192"
+anthropic_api_key: "sk-ant-api03-abcdef1234567890abcdef1234567890"
+database_connection_url: "postgres://admin:SuperSecretPassword123@internal-db.titangate.internal:5432/production"
